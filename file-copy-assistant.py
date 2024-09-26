@@ -420,15 +420,16 @@ class CopyManager:
         if self.enable_priority:
             size_of_copied = 0
             number_of_copied = 0
-            priority_count = 1
-            notify_after_last = False
+            priority_count = 1          # starting with '1' since Priority 1 was handled in walk_through_files()
+            notify_after_last = False   # initial flag for the notification after the last priority
             for priority, files in lower_priority_files.items():
                 priority_count += 1
                 priority = priority[1:]
                 if files:                 
                     print(f"Started Priority {priority_count} ({priority.upper()}).")
+                    # Create a directory based on what the current priority is
                     priority_dir = self.file_manager.create_directory(output_dir, f"Priority_{priority}")
-                    print(f"Started copying Priority {priority.upper()} files to {output_dir}.\n")
+                    print(f"Started copying Priority {priority.upper()} files to {priority_dir}.\n")
                     for checksum, old_file_path, file_size in files:
                         new_file_path = priority_dir / old_file_path.name
                         self.file_manager.copy_file(old_file_path, new_file_path)
@@ -436,23 +437,29 @@ class CopyManager:
                         number_of_copied +=1
                         size_of_copied += file_size
                 print()
+
+                # Handle terminal output messages
                 title = f"Finished Priority {priority_count} ({priority.upper()})."
                 print(title)
-
                 if number_of_copied > 0:
                     message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB."
                     print(message)
+                    # Save the current state of copied if the temporary state is not enabled
                     if not self.temp_state:
                         self.settings_manager.save_state(copied, self.state_file)
                 else:
                     message = f"No {priority.upper()} files have been found. No files were copied in this priority."
-                    print(message)         
+                    print(message)     
 
+            # Handle notifications
                 if self.notification_after_every_priority:
                     self.notification_manager.send_notification(title, message)
                 else:
+                    # Sets the flag 'notify_after_last' to True
+                    # only if 'notification after last priority' is enabled and 'notification after every priority' is not
+                    # to ensure the notification doesn't pop-up twice
                     if self.settings_manager.notification_after_last_priority:
-                        notify_after_last = True    
+                        notify_after_last = True          
             if notify_after_last:
                 self.notification_manager.send_notification(title, message)
 
