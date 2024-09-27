@@ -329,6 +329,7 @@ class CopyManager:
             self.enable_priority = True
         priority1_name = priority_list[0][1:].upper()
         priority1_message = "Priority 1 ({}).".format(priority1_name)
+        
         for dirpath, subdirs, filenames in walk(drive):
             for filename in filenames:
                     old_file_path = Path(dirpath) / filename
@@ -341,44 +342,48 @@ class CopyManager:
 
                     extension = old_file_path.suffix.lower()
 
-                    # Check priority settings and handle file copying accordingly.
+                    # Check if priority is enabled and handle file copying accordingly.
                     if self.enable_priority:                       
                         if extension in priority_list:
                             if extension == priority_list[0].lower():
                                 if first_run:
                                     print(f"Started {priority1_message}")
                                     new_file_path = self.file_manager.create_directory(output_dir, f"Priority_{priority_list[0][1:]}") / filename
-                                    print(f"Started copying Priority 1 ({extension[1:].upper()}) files to {new_file_path}.\n")
+                                    print(f"Started copying {priority1_message}) files to {new_file_path}.\n")
                                     first_run = False
+                                # Copy the current file immediately since its extension is the first priority
                                 self.file_manager.copy_file(old_file_path, new_file_path)
                                 copied.add(checksum)
                                 size_of_copied += file_size
                                 number_of_copied +=1
                             else:
+                                # Add the current file to the priority queue since its extension is still in the priority list
                                 lower_priority_files[extension].add((checksum, old_file_path, file_size))
                         else:
+                            # Add the current file at the end of queue since its not a priority
                             if extension not in self.disabled_extensions:
                                 non_priority_files.add((checksum, old_file_path, file_size))
                     else:
                         # Copy all files if priority is disabled.
                         if extension not in self.disabled_extensions:
-                            if first_run:
-                                print(f"Started copying all files to {output_dir}")
-                                first_run = False
                             new_file_path = self.file_manager.create_directory(output_dir, "All_files_copied")
+                            if first_run:
+                                print(f"Started copying all files to {new_file_path}")
+                                first_run = False
                             self.file_manager.copy_file(old_file_path, new_file_path)
                             copied.add(checksum)
                             size_of_copied += file_size
                             number_of_copied +=1   
-        print()
 
+        print()
+        message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB."
         if self.enable_priority:
-            # Handle terminal output and notifications after finishing copying Priority 1 files.
+            # Handle terminal output and notifications on finishing the copying of Priority 1
             title = f"Finished {priority1_message}"
             print(title) 
             if number_of_copied > 0 and not self.temp_state:
-                message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB."
                 print(message)
+                # Save the current state of copied if the temporary state is not enabled
                 if not temp_state:
                     self.settings_manager.save_state(copied, self.state_file)
             else:
@@ -388,11 +393,10 @@ class CopyManager:
             if self.first_priority_notification or self.notification_after_every_priority:                   
                 self.notification_manager.send_notification(title, message)
         else:
-            # Handle terminal outputs and notifications after finishing copying all files if priorities were disabled.
+            # Handle terminal outputs and notifications on copying all of the files
             title = f"Finished copying all files from disk {drive[":-1"]}"
             print(title)
             if number_of_copied > 0:
-                message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB." 
                 print(message) 
                 # Save the current state of copied if the temporary state is not enabled
                 if not temp_state:
@@ -421,15 +425,16 @@ class CopyManager:
             size_of_copied = 0
             number_of_copied = 0
             priority_count = 1          # starting with '1' since Priority 1 was handled in walk_through_files()
-            notify_after_last = False   # initial flag for the notification after the last priority
+            notify_after_last = False   # initial flag not allowing the notification after the last priority
+
             for priority, files in lower_priority_files.items():
                 priority_count += 1
-                priority = priority[1:]
+                priority = priority[1:].upper() # getting rid of '.' from the beggining of the extension
                 if files:                 
-                    print(f"Started Priority {priority_count} ({priority.upper()}).")
+                    print(f"Started Priority {priority_count} ({priority}).")
                     # Create a directory based on what the current priority is
                     priority_dir = self.file_manager.create_directory(output_dir, f"Priority_{priority}")
-                    print(f"Started copying Priority {priority.upper()} files to {priority_dir}.\n")
+                    print(f"Started copying Priority {priority} files to {priority_dir}.\n")
                     for checksum, old_file_path, file_size in files:
                         new_file_path = priority_dir / old_file_path.name
                         self.file_manager.copy_file(old_file_path, new_file_path)
@@ -439,7 +444,7 @@ class CopyManager:
                 print()
 
                 # Handle terminal output messages
-                title = f"Finished Priority {priority_count} ({priority.upper()})."
+                title = f"Finished Priority {priority_count} ({priority})."
                 print(title)
                 if number_of_copied > 0:
                     message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB."
@@ -448,7 +453,7 @@ class CopyManager:
                     if not self.temp_state:
                         self.settings_manager.save_state(copied, self.state_file)
                 else:
-                    message = f"No {priority.upper()} files have been found. No files were copied in this priority."
+                    message = f"No {priority} files have been found. No files were copied in this priority."
                     print(message)     
 
             # Handle notifications
@@ -479,10 +484,12 @@ class CopyManager:
         """
         size_of_copied = 0
         number_of_copied = 0  
+
         if non_priority_files:
             print(f"Started Non-Priority.")
+            # Create a directory for all non-priority files in the parent drive output directory
             non_priority_dir = self.file_manager.create_directory(output_dir, "Non-priority")
-            print(f"Started copying Non-Priority files to {output_dir}.\n")
+            print(f"Started copying Non-Priority files to {non_priority_dir}.\n")
             for checksum, old_file_path, file_size in non_priority_files:
                 new_file_path = non_priority_dir / old_file_path.name
                 self.file_manager.copy_file(old_file_path, new_file_path)
@@ -490,20 +497,23 @@ class CopyManager:
                 number_of_copied +=1
                 size_of_copied += file_size
         print()
+        # Handle terminal output messages
         title = "Finished copying Non-Priority files"
         print(title + ".")
         if number_of_copied > 0:
             message = f"Copied {number_of_copied} files of total size of {size_of_copied / 1e9:.2f} GB."
             print(message)
+            # Save the current state of copied if the temporary state is not enabled
             if not self.temp_state:
                 self.settings_manager.save_state(copied, self.state_file)          
         else:
             message = f"No non-priority files have been found. No non-priority files were copied."
             print(message)
-        
+        # Notify that all transfers are finished if this feature is enabled
         if self.notify_after_all_transfers_finished:
                 self.notification_manager.send_notification(title, message)
         print()
+
         return copied
 
 def prompts(settings_manager):
