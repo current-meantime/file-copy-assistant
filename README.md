@@ -86,6 +86,8 @@ The settings.json file is automatically created on first run and stores user pre
     "Enable priority": true
 }
 ```
+Bear in mind that the first extension in the "Prioritized file extensions" list will be treated as the main priority.
+
 ## Example
 
 1. Upon starting, the program will ask whether you want to change the default output directory for this session and provide other configuration prompts.
