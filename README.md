@@ -55,11 +55,11 @@ python file_copy_assistant.py
 
 ## Program Flow
 
-1. Detecting Drives: The program waits for a removable drive to be connected.
-2. Interactive Prompts (optional):
+1. Interactive Prompts (optional):
     * Change the default output directory.
     * Clear or create a new state file.
     * Enable or disable priority-based copying for the session.
+2. Detecting Drives: The program waits for a removable drive to be connected.
 3. File Copying:
     * Files are copied according to their priority, with the option to skip unwanted extensions.
     * Non-priority files can be copied at the end.
