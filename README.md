@@ -96,9 +96,5 @@ You can add as many prioritized and disabled extensions as you wish.
 2. The program will detect connected removable drives and start copying files based on the priority rules in settings.json.
 
 
-### Summary:
-
-- **Features** section highlights the functionality of the tool.
-- **Installation** and **Usage** sections give instructions on setting up and running the program.
-- **Settings** explains the configuration options in `settings.json`.
-- Example prompts and program flow are explained to help users understand how to interact with the script.
+### TODO:
+* Fix Issue: fix counting file size of copied files
