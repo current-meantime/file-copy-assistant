@@ -1,3 +1,6 @@
 # Ignore user-specific data files
 state.json
 settings.json
+
+venv
+__pycache__
